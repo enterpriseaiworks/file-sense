@@ -11,6 +11,12 @@ Your Desktop Agent is a planned, self-hosted chat application that turns an expl
 > [!IMPORTANT]
 > This repository is currently in the **documentation and design phase**. The application code and Docker services have not been implemented yet.
 
+## System architecture
+
+![Your Desktop Agent system architecture](docs/assets/system-architecture-v3.png)
+
+The primary request path is Streamlit UI → API Gateway → FastAPI Agent Service → RAG Application → LLM API Gateway → selected LLM. PostgreSQL preserves durable application memory, Redis accelerates temporary state, and Pinecone remains the document vector store.
+
 ## What it will do
 
 - Read PDF, DOCX, Markdown, and plain-text files from a read-only local folder.
@@ -72,13 +78,15 @@ The exact commands will become active after implementation. See the [getting-sta
 ## Application components
 
 - **Streamlit UI** — chat, model selection, citations, document status, and usage views.
+- **API gateway** — protects, validates, limits, and routes incoming requests to FastAPI.
 - **FastAPI** — stable API boundary for chat, conversations, indexing, health, and gateway status.
 - **LangChain** — document loaders, splitters, embedding adapters, and retrieval building blocks.
 - **LangGraph** — controllable and testable RAG workflow orchestration.
 - **Pinecone** — managed vector storage and similarity search.
 - **Enterprise LLM gateway** — multi-provider routing, fallback, policy enforcement, budgets, security, and telemetry.
 - **Indexer** — scheduled incremental synchronization of the mounted document folder.
-- **PostgreSQL/SQLite** — gateway operational data and local application state.
+- **PostgreSQL** — durable conversations, LangGraph checkpoints, settings, indexing records, and audit metadata.
+- **Redis** — expiring sessions, retrieval cache, rate-limit counters, and distributed job locks.
 - **OpenTelemetry, Prometheus, Grafana, and Loki** — traces, metrics, dashboards, and sanitized logs.
 
 Read the [architecture guide](docs/architecture.md) for the complete request and ingestion flows.

@@ -4,29 +4,24 @@ Your Desktop Agent separates the user interface, API, ingestion pipeline, agent 
 
 ## Service topology
 
+![Your Desktop Agent system architecture](assets/system-architecture-v3.png)
+
+The primary request path is:
+
 ```text
-Browser
-  |
-  v
-Streamlit UI
-  |
-  v
-FastAPI backend ---------------- Local application database
-  |                                      |
-  |                                      +-- conversations
-  |                                      +-- file manifests
-  |                                      +-- indexing jobs
-  |
-  +-- LangGraph RAG workflow -------- Pinecone
-  |
-  +-- Enterprise LLM gateway -------- Multiple LLM providers
+User -> Streamlit UI -> API Gateway -> FastAPI Agent Service
+     -> RAG Application -> LLM API Gateway -> selected LLM
+```
 
-Read-only local folder --> Scheduled indexer --> Pinecone
+Document ingestion follows an independent path:
 
-Services --> OpenTelemetry Collector --> Prometheus/Grafana/Loki
+```text
+Desktop documents -> Document indexer -> Pinecone
 ```
 
 Only the Streamlit port should be exposed for normal local use. FastAPI, the gateway, databases, and telemetry services will communicate over private Docker networks. Grafana may be exposed on a localhost-only administrative port.
+
+The inbound API gateway is separate from the LLM API gateway. The inbound gateway protects and routes application traffic to FastAPI. The LLM gateway applies model routing, security, limits, fallback, and observability to outbound model requests.
 
 ## Ingestion flow
 
@@ -59,6 +54,18 @@ The graph will:
 
 Document content will be treated as untrusted data, not executable model instructions.
 
+## Memory and caching
+
+The application uses three stores with separate responsibilities:
+
+- **PostgreSQL provides durable application memory.** It stores conversations and messages, LangGraph checkpoints, user settings, selected models, file manifests, indexing jobs, feedback, and audit metadata. A conversation can therefore resume after a process or Docker restart.
+- **Redis provides temporary, expiring state.** It stores active sessions, retrieval cache entries, rate-limit counters, streaming coordination, and distributed indexing locks. Redis is an optimization and coordination layer, never the authoritative copy of a conversation.
+- **Pinecone provides document knowledge memory.** It stores document embeddings and chunk metadata for semantic retrieval. It does not store ordinary chat history.
+
+Retrieval cache keys will include the normalized query, Pinecone namespace, embedding model, retrieval configuration, and index version. Entries will have a short configurable time-to-live and will be invalidated whenever document synchronization changes the index. Full prompts, retrieved chunks, and generated answers will not be cached by default because they can contain sensitive data.
+
+If Redis is unavailable, chat and retrieval will continue by reading from PostgreSQL and Pinecone, with reduced performance. Features that require coordination, such as distributed job locking or rate limiting, will fail safely rather than silently bypassing their controls.
+
 ## Enterprise multi-LLM gateway
 
 The gateway will expose a normalized API while supporting multiple configured providers and model aliases. It will provide:
@@ -81,7 +88,8 @@ Chat models can change without rebuilding the document index. An embedding-model
 | Original files | User's local folder |
 | File access | Read-only indexer mount |
 | Embeddings and chunk metadata | Pinecone |
-| Conversations and manifests | Local application database |
-| Gateway usage and audit metadata | Gateway PostgreSQL database |
+| Conversations, LangGraph checkpoints, manifests, jobs, and settings | PostgreSQL |
+| Sessions, retrieval cache, rate limits, and job locks | Redis with expiration |
+| Gateway usage and audit metadata | PostgreSQL, isolated from application records |
 | Sanitized telemetry | Local observability services |
 | Provider credentials | Runtime secrets, never the browser |
