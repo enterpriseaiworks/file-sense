@@ -4,7 +4,7 @@ This repository contains a local-drive RAG chat application built as independent
 
 ## Current status
 
-The project is in its documentation and design phase. Do not create application code, deployment manifests, generated configuration, or executable scaffolding until the project owner explicitly approves implementation.
+The project owner has approved implementation Phases 0–2: architecture decisions, the Python workspace, typed configuration, service foundations, and local Docker topology. Do not implement persistence, ingestion, retrieval, or grounded chat until the owner approves their dependent phases.
 
 ## Architecture rules
 

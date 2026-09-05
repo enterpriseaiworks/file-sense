@@ -1,10 +1,10 @@
 # Architecture
 
-Your Desktop Agent separates the user interface, API, ingestion pipeline, agent workflow, model gateway, storage, and observability systems. This keeps provider credentials out of the browser and allows the Streamlit interface to be replaced later without rewriting the RAG system.
+FileSense separates the user interface, API, ingestion pipeline, agent workflow, model gateway, storage, and observability systems. This keeps provider credentials out of the browser and allows the Streamlit interface to be replaced later without rewriting the RAG system.
 
 ## Service topology
 
-![Your Desktop Agent system architecture](assets/system-architecture-v3.png)
+![FileSense system architecture](assets/system-architecture-v3.png)
 
 The primary request path is:
 

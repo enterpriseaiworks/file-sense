@@ -1,0 +1,22 @@
+model_list:
+  - model_name: os.environ/CHAT_MODEL_ALIAS
+    litellm_params:
+      model: os.environ/CHAT_PROVIDER_MODEL
+      api_key: os.environ/CHAT_PROVIDER_API_KEY
+  - model_name: os.environ/EMBEDDING_MODEL_ALIAS
+    litellm_params:
+      model: os.environ/EMBEDDING_PROVIDER_MODEL
+      api_key: os.environ/EMBEDDING_PROVIDER_API_KEY
+
+general_settings:
+  master_key: os.environ/LLM_GATEWAY_API_KEY
+  disable_spend_logs: true
+
+litellm_settings:
+  set_verbose: false
+  json_logs: true
+  turn_off_message_logging: true
+  request_timeout: 60
+  num_retries: 2
+  allowed_fails: 3
+  cooldown_time: 60

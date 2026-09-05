@@ -1,10 +1,10 @@
 # Contributing
 
-Thank you for helping improve Your Desktop Agent. The project should remain understandable to people who are new to RAG as well as maintainable by experienced engineers.
+Thank you for helping improve FileSense. The project should remain understandable to people who are new to RAG as well as maintainable by experienced engineers.
 
-## Before implementation begins
+## Current implementation boundary
 
-The repository is currently documentation-first. Do not add application code until the implementation plan is explicitly approved by the project owner. Documentation corrections and planning refinements are welcome.
+Implementation Phases 0–2 are approved. Changes may improve architecture records, workspace tooling, typed configuration, service foundations, and the local Docker topology. Do not add persistence, ingestion, retrieval, or grounded-chat behavior until the project owner approves the corresponding phase.
 
 ## Development principles
 
@@ -30,6 +30,6 @@ fix(gateway): preserve exact-model routing policy
 
 Pull requests should describe the user problem, the chosen solution, compatibility or security considerations, and any user-visible documentation changes.
 
-## Expected quality checks
+## Quality checks
 
-The implementation will provide standard commands for formatting, linting, type checking, unit tests, integration tests, evaluation, and end-to-end tests. Those commands will be documented here when the toolchain is created.
+Install the locked workspace with `make sync`. Run formatting with `make format`, or run linting, strict type checking, and offline unit tests together with `make check`. Integration, evaluation, and end-to-end commands will be added with the behavior they verify.

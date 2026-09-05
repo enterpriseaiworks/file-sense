@@ -1,6 +1,6 @@
 # Security policy
 
-Your Desktop Agent is currently in its design phase and has no released application version.
+FileSense is under active development and has no released application version.
 
 Please do not disclose suspected vulnerabilities, leaked credentials, or confidential document content in public issues. Repository owners should enable GitHub private vulnerability reporting before publishing the first release.
 

@@ -1,0 +1,149 @@
+name: filesense
+
+services:
+  api-gateway:
+    image: caddy:2.9-alpine
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - ./deploy/docker/Caddyfile:/etc/caddy/Caddyfile:ro
+    networks: [frontend, backend]
+
+  api:
+    build:
+      context: .
+      dockerfile: deploy/docker/api.Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DOCUMENTS_PATH: /documents
+      PUBLIC_API_BASE_URL: http://localhost:8000
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ${DOCUMENTS_PATH:?Set DOCUMENTS_PATH in .env}:/documents:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [backend]
+
+  streamlit:
+    build:
+      context: .
+      dockerfile: deploy/docker/streamlit.Dockerfile
+    restart: unless-stopped
+    environment:
+      HOME: /tmp
+      API_BASE_URL: http://api-gateway
+      APP_API_KEY: ${APP_API_KEY:?Set APP_API_KEY in .env}
+    ports:
+      - "127.0.0.1:8501:8501"
+    depends_on:
+      - api-gateway
+    networks: [frontend]
+
+  indexer:
+    build:
+      context: .
+      dockerfile: deploy/docker/indexer.Dockerfile
+    restart: unless-stopped
+    profiles: [ingestion]
+    env_file: .env
+    environment:
+      DOCUMENTS_PATH: /documents
+    volumes:
+      - ${DOCUMENTS_PATH:?Set DOCUMENTS_PATH in .env}:/documents:ro
+      - indexer-data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      llm-gateway:
+        condition: service_started
+    networks: [backend]
+
+  llm-gateway:
+    image: ghcr.io/berriai/litellm:main-stable
+    restart: unless-stopped
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-desktop_agent}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-desktop_agent}
+    volumes:
+      - ./deploy/gateway/litellm-config.yaml:/app/config.yaml:ro
+    networks: [backend]
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-desktop_agent}
+      POSTGRES_USER: ${POSTGRES_USER:-desktop_agent}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [backend]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "no", "--save", ""]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [backend]
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.119.0
+    profiles: [observability]
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./deploy/observability/otel-collector.yaml:/etc/otelcol/config.yaml:ro
+    networks: [backend]
+
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    profiles: [observability]
+    volumes:
+      - ./deploy/observability/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+    networks: [backend]
+
+  loki:
+    image: grafana/loki:3.3.2
+    profiles: [observability]
+    networks: [backend]
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    profiles: [observability]
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks: [backend]
+
+networks:
+  frontend:
+  backend:
+
+volumes:
+  postgres-data:
+  grafana-data:
+  indexer-data:

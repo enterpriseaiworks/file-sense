@@ -1,6 +1,58 @@
 # Getting started
 
-This guide describes the intended installation and first-use experience. Commands that depend on application code will become available during implementation.
+This guide covers the implemented text-document indexing and grounded chat path.
+
+## Foundation setup
+
+The development workspace requires `uv` and a Python 3.12 interpreter. `uv` honors the repository's `.python-version` file.
+
+```bash
+make sync
+make check
+```
+
+The checks run Ruff, strict mypy, and offline pytest tests. To prepare container configuration:
+
+```bash
+cp .env.example .env
+```
+
+Replace every `change-me` value and set `DOCUMENTS_PATH` to a folder Docker may mount read-only. The current base stack is started with:
+
+```bash
+docker compose up --build
+```
+
+The base stack serves the chat application. Run an incremental document sync separately:
+
+- Streamlit UI: `http://localhost:8501`
+- FastAPI backend: `http://localhost:8000`
+- FastAPI documentation: `http://localhost:8000/docs`
+
+The backend binds only to `127.0.0.1`; protected endpoints still require the configured
+`APP_API_KEY` in the `X-API-Key` request header.
+
+Run an incremental document sync separately:
+
+```bash
+docker compose --profile ingestion run --rm indexer --once
+```
+
+The indexer supports PDF, DOCX, UTF-8 Markdown, plain text, reStructuredText, CSV, and JSON. Optional telemetry services use the `observability` Compose profile.
+
+## Optional LangSmith tracing
+
+LangGraph tracing can be sent to LangSmith by creating an API key at
+[smith.langchain.com](https://smith.langchain.com), setting `LANGSMITH_API_KEY` in `.env`,
+and changing `LANGSMITH_TRACING` to `true`. Traces use the `filesense` project.
+Inputs and outputs are hidden by default so questions, retrieved document text, answers, vectors,
+and source filenames are not sent in trace payloads. Operational metadata remains enabled so
+LangSmith can associate token counts with provider/model pricing. Recreate the API container after
+changing these values:
+
+```bash
+docker compose up -d --force-recreate api
+```
 
 ## What users will need
 
@@ -10,7 +62,7 @@ This guide describes the intended installation and first-use experience. Command
 - A local folder containing PDF, DOCX, Markdown, or TXT files
 - Sufficient permission for Docker to read the selected folder
 
-## Planned setup
+## Planned complete-product setup
 
 1. Download or clone this repository.
 2. Copy `.env.example` to `.env`.
@@ -34,7 +86,12 @@ After synchronization, the document page will show:
 - Added, changed, removed, skipped, and failed file counts
 - Per-file processing errors with safe remediation guidance
 
-The chat page will stream answers and display expandable citations. Each citation will include a relative filename, page or section where available, and a short supporting excerpt.
+The chat page streams answer text only. Citation metadata remains internal for grounding and auditing; document filenames are not displayed in the UI.
+
+When a user explicitly asks to find, open, download, or receive a link to a document, the chat
+displays **Open &lt;filename&gt;** buttons using the exact filename from the configured folder. These
+use opaque, signed URLs that expire after five minutes. The API never places an absolute path or
+source filename in the URL; filenames appear only after an explicit file request.
 
 ## Local folder behavior
 

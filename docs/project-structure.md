@@ -3,7 +3,7 @@
 The repository will follow a service-oriented layout inspired by LangChain's separation of implementation, integrations, tests, documentation, and development guidance.
 
 ```text
-gangaram-rag-agent/
+filesense/
 |-- README.md
 |-- AGENTS.md
 |-- CONTRIBUTING.md
@@ -14,12 +14,12 @@ gangaram-rag-agent/
 |   |-- project-structure.md
 |   |-- roadmap.md
 |   `-- security.md
-|-- services/                 # Created after implementation approval
+|-- services/
 |   |-- api/                  # FastAPI and LangGraph application
 |   |-- indexer/              # Scheduled local-drive ingestion
 |   |-- streamlit/            # User-facing chat application
 |   `-- gateway/              # Multi-LLM gateway configuration
-|-- packages/                 # Shared Python packages
+|-- packages/                 # Shared Python packages, added by implementation phase
 |   |-- rag-core/             # Chunking, retrieval, citations, graph state
 |   |-- connectors/           # Pinecone and document integrations
 |   `-- observability/        # Logging, metrics, tracing, redaction
@@ -37,6 +37,8 @@ gangaram-rag-agent/
 ```
 
 Directories marked as future implementation will not be populated with application code until the implementation plan is approved.
+
+Phases 0–2 are approved. The current implementation contains service entry points for the API, indexer, and Streamlit shell plus the shared configuration package. Remaining shared packages will be introduced only when their corresponding behavior is implemented.
 
 ## Layer responsibilities
 

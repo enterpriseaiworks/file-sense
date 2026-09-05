@@ -1,6 +1,6 @@
 # Security and privacy
 
-This document describes the intended security design. Controls will be verified during implementation and must not be treated as active while the repository remains in the design phase.
+This document distinguishes implemented controls from controls that still require production policy and integration work.
 
 ## Trust boundaries
 
@@ -9,20 +9,26 @@ This document describes the intended security design. Controls will be verified 
 - Hosted model providers and Pinecone are external processors.
 - Docker's private network separates public UI traffic from internal services.
 
-## Planned controls
+## Implemented controls
 
-- Mount the configured source directory read-only.
-- Restrict indexing to the fixed mount and prevent path traversal.
-- Keep provider credentials in runtime secrets or protected environment configuration.
-- Authenticate service-to-service gateway requests.
+- Mount the configured source directory read-only and reject symlinks, oversized files, and paths outside the mount.
+- Keep provider credentials in backend runtime configuration and route model traffic through LiteLLM.
+- Require an application API key for model, conversation, and chat endpoints using constant-time comparison.
+- Restrict selectable chat models to configured aliases.
+- Treat retrieved passages and conversation transcripts as untrusted data in gateway prompts.
+- Apply bounded request/file sizes and bounded ingestion retries.
+- Store audit metadata without questions, retrieved passages, or generated answers.
+- Return relative filenames and citation coordinates instead of absolute host paths.
+- Keep filenames hidden in normal chat. Explicit file requests may display the exact filename while
+  using opaque file IDs and five-minute HMAC-signed download links. Reject traversal and symlinks,
+  enforce type/size limits, and audit successful downloads without recording paths or tokens.
+
+## Remaining controls
+
 - Enforce approved providers, models, parameters, token limits, rate limits, budgets, and concurrency limits.
 - Redact secrets, personal data, questions, retrieved passages, and answers from logs by default.
 - Disable raw prompt and response retention unless an administrator explicitly enables a compliant storage policy.
 - Scan input and output for configurable security and data-loss-prevention policies.
-- Instruct the agent to ignore commands embedded in retrieved documents.
-- Return only relative filenames and safe citation metadata.
-- Record sanitized security and administrative audit events.
-- Apply bounded file-size, request-size, and processing-time limits.
 - Avoid unsafe deserialization and execution of document content.
 
 ## External data flow
