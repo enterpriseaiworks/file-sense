@@ -1,6 +1,6 @@
 <div align="center">
 
-# FileSense
+# Your FileSense agent
 
 ### Ask questions across your local documents with grounded answers.
 
