@@ -1,6 +1,6 @@
 <div align="center">
 
-# Your Desktop Agent
+# Your filse sense agent
 
 ### Ask questions across your local documents with grounded answers and citations.
 
